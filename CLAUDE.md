@@ -11,6 +11,10 @@ go test -run TestName   # Run a single test
 go test -v ./...        # Verbose test output
 ```
 
+## Git Conventions
+
+Semantic commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`, etc.
+
 ## Architecture
 
 Single-package Go library (`package md2adf`) that converts Markdown to Atlassian Document Format (ADF) JSON. ADF is used by Jira Cloud and Confluence for rich text content.

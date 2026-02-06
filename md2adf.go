@@ -289,10 +289,23 @@ func convertInlineChildren(n ast.Node, source []byte, marks []Node) []Node {
 
 		case *ast.AutoLink:
 			url := string(node.URL(source))
-			nodes = append(nodes, Node{
-				"type":  "inlineCard",
-				"attrs": Node{"url": url},
-			})
+			if node.AutoLinkType == ast.AutoLinkEmail {
+				linkMark := Node{
+					"type":  "link",
+					"attrs": Node{"href": "mailto:" + url},
+				}
+				newMarks := append(copyMarks(marks), linkMark)
+				nodes = append(nodes, Node{
+					"type":  "text",
+					"text":  url,
+					"marks": newMarks,
+				})
+			} else {
+				nodes = append(nodes, Node{
+					"type":  "inlineCard",
+					"attrs": Node{"url": url},
+				})
+			}
 
 		case *ast.Image:
 			// ADF doesn't support inline images the same way

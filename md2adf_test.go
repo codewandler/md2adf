@@ -552,6 +552,106 @@ func TestConvert_ExplicitLink_StaysAsLink(t *testing.T) {
 	}
 }
 
+func TestConvert_EmailAutoLink(t *testing.T) {
+	result := Convert("Contact <user@example.com> for help")
+	content := result["content"].([]Node)
+	para := content[0]
+	paraContent := para["content"].([]Node)
+
+	// Find the email link node
+	var emailNode Node
+	for _, n := range paraContent {
+		if marks, ok := n["marks"].([]Node); ok {
+			for _, m := range marks {
+				if m["type"] == "link" {
+					emailNode = n
+					break
+				}
+			}
+		}
+	}
+	if emailNode == nil {
+		t.Fatal("expected to find link mark on email autolink")
+	}
+	if emailNode["text"] != "user@example.com" {
+		t.Errorf("expected text 'user@example.com', got %v", emailNode["text"])
+	}
+	marks := emailNode["marks"].([]Node)
+	attrs := marks[0]["attrs"].(Node)
+	if attrs["href"] != "mailto:user@example.com" {
+		t.Errorf("expected href 'mailto:user@example.com', got %v", attrs["href"])
+	}
+
+	// Should NOT be an inlineCard
+	for _, n := range paraContent {
+		if n["type"] == "inlineCard" {
+			t.Fatal("email autolink should not become inlineCard")
+		}
+	}
+}
+
+func TestConvert_BareEmail(t *testing.T) {
+	result := Convert("Send mail to support@example.com please")
+	content := result["content"].([]Node)
+	para := content[0]
+	paraContent := para["content"].([]Node)
+
+	// Find the email link node
+	var emailNode Node
+	for _, n := range paraContent {
+		if marks, ok := n["marks"].([]Node); ok {
+			for _, m := range marks {
+				if m["type"] == "link" {
+					emailNode = n
+					break
+				}
+			}
+		}
+	}
+	if emailNode == nil {
+		t.Fatal("expected to find link mark on bare email")
+	}
+	if emailNode["text"] != "support@example.com" {
+		t.Errorf("expected text 'support@example.com', got %v", emailNode["text"])
+	}
+	marks := emailNode["marks"].([]Node)
+	attrs := marks[0]["attrs"].(Node)
+	if attrs["href"] != "mailto:support@example.com" {
+		t.Errorf("expected href 'mailto:support@example.com', got %v", attrs["href"])
+	}
+}
+
+func TestConvert_ExplicitMailtoLink(t *testing.T) {
+	result := Convert("[Email us](mailto:info@example.com)")
+	content := result["content"].([]Node)
+	para := content[0]
+	paraContent := para["content"].([]Node)
+
+	// Should be a text node with link mark (handled by ast.Link, not AutoLink)
+	var linkNode Node
+	for _, n := range paraContent {
+		if marks, ok := n["marks"].([]Node); ok {
+			for _, m := range marks {
+				if m["type"] == "link" {
+					linkNode = n
+					break
+				}
+			}
+		}
+	}
+	if linkNode == nil {
+		t.Fatal("expected to find link mark on explicit mailto link")
+	}
+	if linkNode["text"] != "Email us" {
+		t.Errorf("expected text 'Email us', got %v", linkNode["text"])
+	}
+	marks := linkNode["marks"].([]Node)
+	attrs := marks[0]["attrs"].(Node)
+	if attrs["href"] != "mailto:info@example.com" {
+		t.Errorf("expected href 'mailto:info@example.com', got %v", attrs["href"])
+	}
+}
+
 func TestConvert_EmptyInput(t *testing.T) {
 	result := Convert("")
 	assertType(t, result, "doc")
